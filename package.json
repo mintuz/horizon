@@ -1,7 +1,7 @@
 {
-  "name": "horizon",
+  "name": "@mintuz/horizon",
   "version": "1.0.0",
-  "description": "A Intersection Observer wrapper with some smart defaults",
+  "description": "An Intersection Observer wrapper with some smart defaults",
   "main": "index.js",
   "scripts": {
     "prettier": "prettier --arrow-parens=always --single-quote --tab-width=4 --print-width=80 \"./src/**/*.js\" \"./test/**/*js\" --write",
