@@ -16,15 +16,7 @@ A light wrapper round the Intersection Observer API with a fallback for browsers
 | onExit | `(entry) => {}` | Callback which is called when the element is out of view | N/A |
 | triggerOnce | `true` | Will trigger onEntry callback once, useful for lazyLoading | false |
 | toObserve | `document.querySelector('.element-to-come-in-view')` | The element to observe which may or may not come into view | Required |
-| intersectionObserverConfig | ```{
-    root: null,
-    rootMargin: '35%',
-    threshold: 0
-}``` | Options passed to [IntersectionObserver API](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API) | ```{
-    root: null,
-    rootMargin: '35%',
-    threshold: 0
-}``` |
+| intersectionObserverConfig | ```{ root: null, rootMargin: '35%', threshold: 0 }``` | Options passed to [IntersectionObserver API](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API) | ```{ root: null rootMargin: '35%', threshold: 0 }``` |
 
 ### Example
 
