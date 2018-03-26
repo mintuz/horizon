@@ -1,0 +1,56 @@
+{
+  "name": "horizon",
+  "version": "1.0.0",
+  "description": "A Intersection Observer wrapper with some smart defaults",
+  "main": "index.js",
+  "scripts": {
+    "prettier": "prettier --arrow-parens=always --single-quote --tab-width=4 --print-width=80 \"./src/**/*.js\" \"./test/**/*js\" --write",
+    "babel": "babel src --out-dir dist --ignore '**/*.test.js'",
+    "test": "npm run prettier && jest --coverage --no-cache",
+    "build": "npm run prettier && npm run babel",
+    "jest": "jest --watch"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.js{,x}"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 100,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      }
+    },
+    "testPathIgnorePatterns": [
+      ".node_modules_production"
+    ]
+  },
+  "keywords": [
+    "Intersection",
+    "Observer",
+    "Lazy",
+    "Loading",
+    "Lazy",
+    "Load",
+    "Lazy",
+    "Scroll",
+    "Lazy"
+  ],
+  "author": "Adam Bulmer",
+  "license": "MIT",
+  "dependencies": {
+    "lodash.throttle": "^4.0.8"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-core": "^6.9.1",
+    "babel-jest": "^20.0.3",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.7.4",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "jest": "^20.0.4",
+    "prettier": "^1.10.2"
+  }
+}
