@@ -62,7 +62,7 @@ const legacyIntersectAPI = (config) => {
         });
     }, 16);
 
-    eventHandler(true);
+    eventHandler(false);
 
     window.addEventListener('scroll', () => {
         eventHandler(config.triggerOnce);
