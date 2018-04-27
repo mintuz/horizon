@@ -1,5 +1,5 @@
 import requestAnimationFrame from './helpers/request-animation-frame';
-import throttle from 'lodash.throttle';
+import debounce from 'lodash.debounce';
 
 const getIntersectionObserverConfig = (customConfig = {}) => {
     return {
@@ -18,10 +18,6 @@ const intersectionObserverExists = () => {
     );
 };
 
-const elementFromPoint = (x, y) => {
-    return document.elementFromPoint(x, y);
-};
-
 const getRootElement = (rootElement) => {
     if (rootElement) {
         return rootElement;
@@ -33,25 +29,11 @@ const getRootElement = (rootElement) => {
 const isElementVisible = (rootElement, elementToObserve) => {
     const rect = elementToObserve.getBoundingClientRect();
 
-    const viewportWidth = getRootElement(rootElement).clientWidth;
-    const viewportHeight = getRootElement(rootElement).clientHeight;
-
-    // Return false if it's not in the viewport
-    if (
-        rect.right < 0 ||
-        rect.bottom < 0 ||
-        rect.left > viewportWidth ||
-        rect.top > viewportHeight
-    ) {
-        return false;
-    }
-
-    // Return true if any of its four corners are visible
     return (
-        elementToObserve.contains(elementFromPoint(rect.left, rect.top)) ||
-        elementToObserve.contains(elementFromPoint(rect.right, rect.top)) ||
-        elementToObserve.contains(elementFromPoint(rect.right, rect.bottom)) ||
-        elementToObserve.contains(elementFromPoint(rect.left, rect.bottom))
+        rect.bottom > 0 &&
+        rect.right > 0 &&
+        rect.left < getRootElement(rootElement).clientWidth &&
+        rect.top < getRootElement(rootElement).clientHeight
     );
 };
 
@@ -62,37 +44,32 @@ const legacyIntersectAPI = (config) => {
     const elementToObserve = config.toObserve;
     const rootElement = intersectionConfig.root;
 
-    const eventHandler = throttle(
-        (onLoad) => {
-            requestAnimationFrame(() => {
-                if (isElementVisible(rootElement, elementToObserve)) {
-                    config.onEntry();
-                    if (!onLoad && config.triggerOnce) {
-                        window.removeEventListener('scroll', eventHandler);
-                        window.removeEventListener('resize', eventHandler);
-                    }
-                } else {
-                    config.onExit();
-                    if (!onLoad && config.triggerOnce) {
-                        window.removeEventListener('scroll', eventHandler);
-                        window.removeEventListener('resize', eventHandler);
-                    }
+    const eventHandler = debounce((triggerOnce) => {
+        requestAnimationFrame(() => {
+            if (isElementVisible(rootElement, elementToObserve)) {
+                config.onEntry();
+                if (triggerOnce) {
+                    window.removeEventListener('scroll', eventHandler);
+                    window.removeEventListener('resize', eventHandler);
                 }
-            });
-        },
-        16,
-        {
-            leading: true
-        }
-    );
+            } else {
+                config.onExit();
+                if (triggerOnce) {
+                    window.removeEventListener('scroll', eventHandler);
+                    window.removeEventListener('resize', eventHandler);
+                }
+            }
+        });
+    }, 16);
 
     eventHandler(true);
 
     window.addEventListener('scroll', () => {
-        eventHandler(false);
+        eventHandler(config.triggerOnce);
     });
+
     window.addEventListener('resize', () => {
-        eventHandler(false);
+        eventHandler(config.triggerOnce);
     });
 };
 
