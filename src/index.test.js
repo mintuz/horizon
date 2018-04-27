@@ -1,4 +1,4 @@
-jest.mock('lodash.throttle');
+jest.mock('lodash.debounce');
 
 jest.mock('./helpers/request-animation-frame', () => {
     return jest.fn().mockImplementation((callback) => {
@@ -6,7 +6,7 @@ jest.mock('./helpers/request-animation-frame', () => {
     });
 });
 
-import throttle from 'lodash.throttle';
+import debounce from 'lodash.debounce';
 import Horizon from './';
 import requestAnimationFrame from './helpers/request-animation-frame';
 
@@ -192,8 +192,6 @@ describe('Horizon', () => {
     describe('Fallback', () => {
         const eventListners = {};
 
-        document.elementFromPoint = jest.fn();
-
         window.addEventListener = jest.fn((eventName, cb) => {
             eventListners[eventName] = cb;
         });
@@ -202,14 +200,43 @@ describe('Horizon', () => {
             delete eventListners[eventName];
         });
 
+        const elementInViewProperties = {
+            width: 120,
+            height: 120,
+            top: 10,
+            left: 10,
+            bottom: 10,
+            right: 10
+        };
+
         beforeEach(() => {
             window.addEventListener.mockClear();
             window.removeEventListener.mockClear();
-            throttle.mockClear();
+            debounce.mockClear();
             requestAnimationFrame.mockClear();
+
+            Object.defineProperty(document.documentElement, 'clientWidth', {
+                value: 0,
+                writable: true
+            });
+
+            Object.defineProperty(document.documentElement, 'clientHeight', {
+                value: 0,
+                writable: true
+            });
+
+            Object.defineProperty(Element.prototype, 'clientWidth', {
+                value: 0,
+                writable: true
+            });
+
+            Object.defineProperty(Element.prototype, 'clientHeight', {
+                value: 0,
+                writable: true
+            });
         });
 
-        test('event handler is throttled', () => {
+        test('event handler is debounced', () => {
             Horizon({
                 onEntry: jest.fn(),
                 onExit: jest.fn(),
@@ -222,7 +249,7 @@ describe('Horizon', () => {
                 }
             });
 
-            expect(throttle.mock.calls.length).toEqual(1);
+            expect(debounce.mock.calls.length).toEqual(1);
         });
 
         test('requestAnimationFrame is called on load', () => {
@@ -338,19 +365,11 @@ describe('Horizon', () => {
 
             test('callback is called if its intersecting', () => {
                 Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return {
-                        width: 120,
-                        height: 120,
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0
-                    };
+                    return elementInViewProperties;
                 });
 
-                Element.prototype.contains = jest.fn(() => {
-                    return true;
-                });
+                document.documentElement.clientWidth = 100;
+                document.documentElement.clientHeight = 100;
 
                 const onEntry = jest.fn();
 
@@ -371,19 +390,11 @@ describe('Horizon', () => {
 
             test('event handlers are not removed if triggerOnce is false', () => {
                 Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return {
-                        width: 120,
-                        height: 120,
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0
-                    };
+                    return elementInViewProperties;
                 });
 
-                Element.prototype.contains = jest.fn(() => {
-                    return true;
-                });
+                document.documentElement.clientWidth = 100;
+                document.documentElement.clientHeight = 100;
 
                 Horizon({
                     onEntry: jest.fn(),
@@ -402,19 +413,11 @@ describe('Horizon', () => {
 
             test('event handlers are removed if triggerOnce is true', () => {
                 Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return {
-                        width: 120,
-                        height: 120,
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0
-                    };
+                    return elementInViewProperties;
                 });
 
-                Element.prototype.contains = jest.fn(() => {
-                    return true;
-                });
+                document.documentElement.clientWidth = 100;
+                document.documentElement.clientHeight = 100;
 
                 Horizon({
                     onEntry: jest.fn(),
@@ -472,19 +475,14 @@ describe('Horizon', () => {
 
             test('callback is called if its intersecting', () => {
                 Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return {
-                        width: 120,
-                        height: 120,
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0
-                    };
+                    return elementInViewProperties;
                 });
 
-                Element.prototype.contains = jest.fn(() => {
-                    return true;
-                });
+                Element.prototype.clientWidth = 100;
+                Element.prototype.clientHeight = 100;
+
+                document.documentElement.clientWidth = 100;
+                document.documentElement.clientHeight = 100;
 
                 const onEntry = jest.fn();
 
@@ -505,19 +503,11 @@ describe('Horizon', () => {
 
             test('event handlers are not removed if triggerOnce is false', () => {
                 Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return {
-                        width: 120,
-                        height: 120,
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0
-                    };
+                    return elementInViewProperties;
                 });
 
-                Element.prototype.contains = jest.fn(() => {
-                    return true;
-                });
+                document.documentElement.clientWidth = 100;
+                document.documentElement.clientHeight = 100;
 
                 Horizon({
                     onEntry: jest.fn(),
@@ -536,19 +526,11 @@ describe('Horizon', () => {
 
             test('event handlers are removed if triggerOnce is true', () => {
                 Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return {
-                        width: 120,
-                        height: 120,
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0
-                    };
+                    return elementInViewProperties;
                 });
 
-                Element.prototype.contains = jest.fn(() => {
-                    return true;
-                });
+                document.documentElement.clientWidth = 100;
+                document.documentElement.clientHeight = 100;
 
                 Horizon({
                     onEntry: jest.fn(),

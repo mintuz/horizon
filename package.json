@@ -1,8 +1,16 @@
 {
   "name": "@mintuz/horizon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An Intersection Observer wrapper with some smart defaults",
   "main": "index.js",
+  "homepage": "http://github.com/mintuz/horizon/tree/master",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mintuz/horizon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mintuz/horizon/issues"
+  },
   "scripts": {
     "prettier": "prettier --arrow-parens=always --single-quote --tab-width=4 --print-width=80 \"./src/**/*.js\" \"./test/**/*js\" --write",
     "babel": "babel src --out-dir dist --ignore '**/*.test.js'",
@@ -40,7 +48,7 @@
   "author": "Adam Bulmer",
   "license": "MIT",
   "dependencies": {
-    "lodash.throttle": "^4.0.8"
+    "lodash.debounce": "^4.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
