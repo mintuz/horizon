@@ -1,4 +1,4 @@
-jest.mock('lodash.throttle');
+jest.mock('lodash.debounce');
 
 jest.mock('./helpers/request-animation-frame', () => {
     return jest.fn().mockImplementation((callback) => {
@@ -6,7 +6,7 @@ jest.mock('./helpers/request-animation-frame', () => {
     });
 });
 
-import throttle from 'lodash.throttle';
+import debounce from 'lodash.debounce';
 import Horizon from './';
 import requestAnimationFrame from './helpers/request-animation-frame';
 
@@ -205,11 +205,11 @@ describe('Horizon', () => {
         beforeEach(() => {
             window.addEventListener.mockClear();
             window.removeEventListener.mockClear();
-            throttle.mockClear();
+            debounce.mockClear();
             requestAnimationFrame.mockClear();
         });
 
-        test('event handler is throttled', () => {
+        test('event handler is debounced', () => {
             Horizon({
                 onEntry: jest.fn(),
                 onExit: jest.fn(),
@@ -222,7 +222,7 @@ describe('Horizon', () => {
                 }
             });
 
-            expect(throttle.mock.calls.length).toEqual(1);
+            expect(debounce.mock.calls.length).toEqual(1);
         });
 
         test('requestAnimationFrame is called on load', () => {
