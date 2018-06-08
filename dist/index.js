@@ -10,7 +10,7 @@ var _requestAnimationFrame = require('./helpers/request-animation-frame');
 
 var _requestAnimationFrame2 = _interopRequireDefault(_requestAnimationFrame);
 
-var _lodash = require('lodash.throttle');
+var _lodash = require('lodash.debounce');
 
 var _lodash2 = _interopRequireDefault(_lodash);
 
@@ -30,10 +30,6 @@ var intersectionObserverExists = function intersectionObserverExists() {
     return 'IntersectionObserver' in window && 'IntersectionObserverEntry' in window && 'intersectionRatio' in window.IntersectionObserverEntry.prototype;
 };
 
-var elementFromPoint = function elementFromPoint(x, y) {
-    return document.elementFromPoint(x, y);
-};
-
 var getRootElement = function getRootElement(rootElement) {
     if (rootElement) {
         return rootElement;
@@ -45,16 +41,7 @@ var getRootElement = function getRootElement(rootElement) {
 var isElementVisible = function isElementVisible(rootElement, elementToObserve) {
     var rect = elementToObserve.getBoundingClientRect();
 
-    var viewportWidth = getRootElement(rootElement).clientWidth;
-    var viewportHeight = getRootElement(rootElement).clientHeight;
-
-    // Return false if it's not in the viewport
-    if (rect.right < 0 || rect.bottom < 0 || rect.left > viewportWidth || rect.top > viewportHeight) {
-        return false;
-    }
-
-    // Return true if any of its four corners are visible
-    return elementToObserve.contains(elementFromPoint(rect.left, rect.top)) || elementToObserve.contains(elementFromPoint(rect.right, rect.top)) || elementToObserve.contains(elementFromPoint(rect.right, rect.bottom)) || elementToObserve.contains(elementFromPoint(rect.left, rect.bottom));
+    return rect.bottom > 0 && rect.right > 0 && rect.left < getRootElement(rootElement).clientWidth && rect.top < getRootElement(rootElement).clientHeight;
 };
 
 var legacyIntersectAPI = function legacyIntersectAPI(config) {
@@ -62,50 +49,60 @@ var legacyIntersectAPI = function legacyIntersectAPI(config) {
     var elementToObserve = config.toObserve;
     var rootElement = intersectionConfig.root;
 
-    var eventHandler = (0, _lodash2.default)(function (onLoad) {
+    var eventHandler = function eventHandler() {
+        /* eslint-disable-next-line no-use-before-define */
+        debouncedIsVisibleHandler();
+    };
+
+    var debouncedIsVisibleHandler = (0, _lodash2.default)(function () {
         (0, _requestAnimationFrame2.default)(function () {
             if (isElementVisible(rootElement, elementToObserve)) {
                 config.onEntry();
-                if (!onLoad && config.triggerOnce) {
+                if (config.triggerOnce) {
                     window.removeEventListener('scroll', eventHandler);
                     window.removeEventListener('resize', eventHandler);
                 }
             } else {
                 config.onExit();
-                if (!onLoad && config.triggerOnce) {
+                if (config.triggerOnce) {
                     window.removeEventListener('scroll', eventHandler);
                     window.removeEventListener('resize', eventHandler);
                 }
             }
         });
-    }, 16, {
-        leading: true
-    });
+    }, 16);
 
-    eventHandler(true);
+    window.addEventListener('scroll', eventHandler);
+    window.addEventListener('resize', eventHandler);
 
-    window.addEventListener('scroll', function () {
-        eventHandler(false);
-    });
-    window.addEventListener('resize', function () {
-        eventHandler(false);
-    });
+    eventHandler();
 };
 
 exports.default = function (config) {
     var intersectionObserverConfig = _extends({}, getIntersectionObserverConfig(config.intersectionObserverConfig));
 
+    var hidden = false;
+    var visible = false;
+
     if (intersectionObserverExists()) {
         var observer = new IntersectionObserver(function (elements, observerInstance) {
             elements.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    config.onEntry(entry);
+                if (entry.isIntersecting && !visible) {
+                    hidden = false;
+                    visible = true;
+
+                    config.onEntry();
 
                     if (config.triggerOnce) {
                         observerInstance.unobserve(config.toObserve);
                     }
                 } else {
-                    config.onExit(entry);
+                    if (!hidden) {
+                        hidden = true;
+                        visible = false;
+
+                        config.onExit();
+                    }
                 }
             });
         }, intersectionObserverConfig);

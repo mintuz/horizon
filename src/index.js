@@ -86,22 +86,20 @@ export default (config) => {
             (elements, observerInstance) => {
                 elements.forEach((entry) => {
                     if (entry.isIntersecting && !visible) {
-                        
                         hidden = false;
                         visible = true;
 
-                        config.onEntry(entry);
-                        
+                        config.onEntry();
+
                         if (config.triggerOnce) {
                             observerInstance.unobserve(config.toObserve);
                         }
                     } else {
                         if (!hidden) {
-                            
                             hidden = true;
                             visible = false;
 
-                            config.onExit(entry);
+                            config.onExit();
                         }
                     }
                 });
