@@ -44,17 +44,22 @@ const legacyIntersectAPI = (config) => {
     const elementToObserve = config.toObserve;
     const rootElement = intersectionConfig.root;
 
-    const eventHandler = debounce((triggerOnce) => {
+    const eventHandler = () => {
+        /* eslint-disable-next-line no-use-before-define */
+        debouncedIsVisibleHandler();
+    };
+
+    const debouncedIsVisibleHandler = debounce(() => {
         requestAnimationFrame(() => {
             if (isElementVisible(rootElement, elementToObserve)) {
                 config.onEntry();
-                if (triggerOnce) {
+                if (config.triggerOnce) {
                     window.removeEventListener('scroll', eventHandler);
                     window.removeEventListener('resize', eventHandler);
                 }
             } else {
                 config.onExit();
-                if (triggerOnce) {
+                if (config.triggerOnce) {
                     window.removeEventListener('scroll', eventHandler);
                     window.removeEventListener('resize', eventHandler);
                 }
@@ -62,15 +67,10 @@ const legacyIntersectAPI = (config) => {
         });
     }, 16);
 
-    eventHandler(false);
+    window.addEventListener('scroll', eventHandler);
+    window.addEventListener('resize', eventHandler);
 
-    window.addEventListener('scroll', () => {
-        eventHandler(config.triggerOnce);
-    });
-
-    window.addEventListener('resize', () => {
-        eventHandler(config.triggerOnce);
-    });
+    eventHandler();
 };
 
 export default (config) => {
@@ -78,18 +78,31 @@ export default (config) => {
         ...getIntersectionObserverConfig(config.intersectionObserverConfig)
     };
 
+    let hidden = false;
+    let visible = false;
+
     if (intersectionObserverExists()) {
         const observer = new IntersectionObserver(
             (elements, observerInstance) => {
                 elements.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        config.onEntry(entry);
+                    if (entry.isIntersecting && !visible) {
+                        
+                        hidden = false;
+                        visible = true;
 
+                        config.onEntry(entry);
+                        
                         if (config.triggerOnce) {
                             observerInstance.unobserve(config.toObserve);
                         }
                     } else {
-                        config.onExit(entry);
+                        if (!hidden) {
+                            
+                            hidden = true;
+                            visible = false;
+
+                            config.onExit(entry);
+                        }
                     }
                 });
             },
