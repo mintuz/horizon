@@ -1,14 +1,9 @@
-jest.mock('lodash.debounce');
-
-jest.mock('./helpers/request-animation-frame', () => {
-    return jest.fn().mockImplementation((callback) => {
-        callback();
-    });
-});
-
-import debounce from 'lodash.debounce';
 import Horizon from './';
-import requestAnimationFrame from './helpers/request-animation-frame';
+
+let elements;
+let callbacks;
+let unobserve;
+let observe;
 
 describe('Horizon', () => {
     beforeEach(() => {
@@ -17,543 +12,227 @@ describe('Horizon', () => {
                 <div class="fake-element">This is a fake DOM</div>
             </div>
         `;
-    });
 
-    describe('IntersectionObserver exists on DOM', () => {
-        let elements;
-        let unobserve;
-        let observe;
+        elements = [];
+        callbacks = [];
+        unobserve = jest.fn();
+        observe = jest.fn();
 
-        beforeEach(() => {
-            elements = [];
-            unobserve = jest.fn();
-            observe = jest.fn();
-
-            window.IntersectionObserver = jest.fn((callback) => {
+        window.IntersectionObserver = jest.fn((callback) => {
+            callbacks.push(() => {
                 callback(elements, {
                     unobserve
                 });
-
-                return {
-                    observe
-                };
             });
 
-            window.IntersectionObserverEntry = jest.fn();
-            window.IntersectionObserverEntry.prototype.intersectionRatio = jest.fn();
+            return {
+                observe
+            };
         });
 
-        afterEach(() => {
-            elements = [];
+        window.IntersectionObserverEntry = jest.fn();
+        window.IntersectionObserverEntry.prototype.intersectionRatio = jest.fn();
+    });
 
-            delete window.IntersectionObserver;
-            delete window.IntersectionObserverEntry.prototype.intersectionRatio;
-            delete window.IntersectionObserverEntry;
+    afterEach(() => {
+        elements = [];
 
-            observe.mockClear();
-            unobserve.mockClear();
-        });
+        delete window.IntersectionObserver;
+        delete window.IntersectionObserverEntry.prototype.intersectionRatio;
+        delete window.IntersectionObserverEntry;
 
-        test('IntersectionObserver is called', () => {
-            Horizon({
-                onEntry: jest.fn(),
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: null,
-                intersectionObserverConfig: {
-                    rootMargin: '100%',
-                    threshold: 1
-                }
-            });
+        observe.mockClear();
+        unobserve.mockClear();
+    });
 
-            expect(IntersectionObserver.mock.calls.length).toEqual(1);
-            expect(IntersectionObserver.mock.calls[0][1]).toEqual({
-                root: null,
+    test('IntersectionObserver is called', () => {
+        Horizon({
+            onEntry: jest.fn(),
+            onExit: jest.fn(),
+            triggerOnce: true,
+            toObserve: null,
+            intersectionObserverConfig: {
                 rootMargin: '100%',
                 threshold: 1
-            });
+            }
         });
 
-        test('Sensible defaults for intersection observer', () => {
-            Horizon({
-                onEntry: jest.fn(),
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: null
-            });
-
-            expect(IntersectionObserver.mock.calls.length).toEqual(1);
-            expect(IntersectionObserver.mock.calls[0][1]).toEqual({
-                root: null,
-                rootMargin: '35%',
-                threshold: 0
-            });
-        });
-
-        test('callback is called and when triggerOnce is false unobserve is not called', () => {
-            elements = [
-                {
-                    isIntersecting: true
-                }
-            ];
-
-            const onEntry = jest.fn();
-
-            Horizon({
-                onEntry,
-                onExit: jest.fn(),
-                triggerOnce: false,
-                toObserve: null,
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
-
-            expect(onEntry.mock.calls.length).toEqual(1);
-            expect(unobserve.mock.calls.length).toEqual(0);
-        });
-
-        test('callback is called and when triggerOnce is true unobserve is called', () => {
-            elements = [
-                {
-                    isIntersecting: true
-                }
-            ];
-
-            const onEntry = jest.fn();
-
-            Horizon({
-                onEntry,
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: null,
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
-
-            expect(onEntry.mock.calls.length).toEqual(1);
-            expect(unobserve.mock.calls.length).toEqual(1);
-        });
-
-        test('callback is not called when not intersecting', () => {
-            elements = [
-                {
-                    isIntersecting: false
-                }
-            ];
-
-            const onEntry = jest.fn();
-
-            Horizon({
-                onEntry,
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: null,
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
-
-            expect(onEntry.mock.calls.length).toEqual(0);
-        });
-
-        test('observe is called with the toOpserve option.', () => {
-            elements = [
-                {
-                    isIntersecting: false
-                }
-            ];
-
-            const onEntry = jest.fn();
-
-            Horizon({
-                onEntry,
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: 'toObserveValue',
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
-
-            expect(observe.mock.calls[0][0]).toEqual('toObserveValue');
+        expect(IntersectionObserver.mock.calls.length).toEqual(1);
+        expect(IntersectionObserver.mock.calls[0][1]).toEqual({
+            root: null,
+            rootMargin: '100%',
+            threshold: 1
         });
     });
 
-    describe('Fallback', () => {
-        const eventListners = {};
-
-        window.addEventListener = jest.fn((eventName, cb) => {
-            eventListners[eventName] = cb;
+    test('Sensible defaults for intersection observer', () => {
+        Horizon({
+            onEntry: jest.fn(),
+            onExit: jest.fn(),
+            triggerOnce: true,
+            toObserve: null
         });
 
-        window.removeEventListener = jest.fn((eventName) => {
-            delete eventListners[eventName];
+        expect(IntersectionObserver.mock.calls.length).toEqual(1);
+        expect(IntersectionObserver.mock.calls[0][1]).toEqual({
+            root: null,
+            rootMargin: '35%',
+            threshold: 0
+        });
+    });
+
+    test('onEntry callback is not called again if its been called once and is visible', () => {
+        elements = [
+            {
+                isIntersecting: true
+            }
+        ];
+
+        const onEntry = jest.fn();
+        const onExit = jest.fn();
+
+        Horizon({
+            onEntry,
+            onExit,
+            triggerOnce: false,
+            toObserve: null,
+            intersectionObserverConfig: {
+                root: null,
+                rootMargin: '35%',
+                threshold: 0
+            }
         });
 
-        const elementInViewProperties = {
-            width: 120,
-            height: 120,
-            top: 10,
-            left: 10,
-            bottom: 10,
-            right: 10
-        };
+        callbacks[0]();
+        callbacks[0]();
 
-        beforeEach(() => {
-            window.addEventListener.mockClear();
-            window.removeEventListener.mockClear();
-            debounce.mockClear();
-            requestAnimationFrame.mockClear();
+        expect(onEntry.mock.calls.length).toEqual(1);
+        expect(onExit.mock.calls.length).toEqual(0);
 
-            Object.defineProperty(document.documentElement, 'clientWidth', {
-                value: 0,
-                writable: true
-            });
+        expect(unobserve.mock.calls.length).toEqual(0);
+    });
 
-            Object.defineProperty(document.documentElement, 'clientHeight', {
-                value: 0,
-                writable: true
-            });
+    test('onExit callback is not called again if its been called once and is hidden', () => {
+        elements = [
+            {
+                isIntersecting: false
+            }
+        ];
 
-            Object.defineProperty(Element.prototype, 'clientWidth', {
-                value: 0,
-                writable: true
-            });
+        const onEntry = jest.fn();
+        const onExit = jest.fn();
 
-            Object.defineProperty(Element.prototype, 'clientHeight', {
-                value: 0,
-                writable: true
-            });
+        Horizon({
+            onEntry,
+            onExit,
+            triggerOnce: false,
+            toObserve: null,
+            intersectionObserverConfig: {
+                root: null,
+                rootMargin: '35%',
+                threshold: 0
+            }
         });
 
-        test('event handler is debounced', () => {
-            Horizon({
-                onEntry: jest.fn(),
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: document.querySelector('.fake-element'),
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
+        callbacks[0]();
+        callbacks[0]();
 
-            expect(debounce.mock.calls.length).toEqual(1);
+        expect(onEntry.mock.calls.length).toEqual(0);
+        expect(onExit.mock.calls.length).toEqual(1);
+
+        expect(unobserve.mock.calls.length).toEqual(0);
+    });
+
+    test('when intersecting and triggerOnce is false unobserve is not called', () => {
+        elements = [
+            {
+                isIntersecting: true
+            }
+        ];
+
+        Horizon({
+            triggerOnce: false,
+            toObserve: null,
+            intersectionObserverConfig: {
+                root: null,
+                rootMargin: '35%',
+                threshold: 0
+            }
         });
 
-        test('requestAnimationFrame is called on load', () => {
-            Horizon({
-                onEntry: jest.fn(),
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: document.querySelector('.fake-element'),
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
+        callbacks[0]();
 
-            expect(requestAnimationFrame.mock.calls.length).toEqual(1);
+        expect(unobserve.mock.calls.length).toEqual(0);
+    });
+
+    test('when intersecting and triggerOnce is true unobserve is called', () => {
+        elements = [
+            {
+                isIntersecting: true
+            }
+        ];
+
+        Horizon({
+            triggerOnce: true,
+            toObserve: null,
+            intersectionObserverConfig: {
+                root: null,
+                rootMargin: '35%',
+                threshold: 0
+            }
         });
 
-        test('requestAnimationFrame is called on scroll', () => {
-            Horizon({
-                onEntry: jest.fn(),
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: document.querySelector('.fake-element'),
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
+        callbacks[0]();
 
-            eventListners.scroll();
+        expect(unobserve.mock.calls.length).toEqual(1);
+    });
 
-            expect(requestAnimationFrame.mock.calls.length).toEqual(2);
+    test('onEntry callback is not called when not intersecting', () => {
+        elements = [
+            {
+                isIntersecting: false
+            }
+        ];
+
+        const onEntry = jest.fn();
+
+        Horizon({
+            onEntry,
+            triggerOnce: true,
+            toObserve: null,
+            intersectionObserverConfig: {
+                root: null,
+                rootMargin: '35%',
+                threshold: 0
+            }
         });
 
-        test('requestAnimationFrame is called on resize', () => {
-            Horizon({
-                onEntry: jest.fn(),
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: document.querySelector('.fake-element'),
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
+        callbacks[0]();
 
-            eventListners.resize();
+        expect(onEntry.mock.calls.length).toEqual(0);
+    });
 
-            expect(requestAnimationFrame.mock.calls.length).toEqual(2);
+    test('observe is called with the toOpserve option.', () => {
+        elements = [
+            {
+                isIntersecting: false
+            }
+        ];
+
+        const onEntry = jest.fn();
+
+        Horizon({
+            onEntry,
+            onExit: jest.fn(),
+            triggerOnce: true,
+            toObserve: 'toObserveValue',
+            intersectionObserverConfig: {
+                root: null,
+                rootMargin: '35%',
+                threshold: 0
+            }
         });
 
-        test('callback is not called when element is not visible', () => {
-            const onEntry = jest.fn();
-
-            Element.prototype.getBoundingClientRect = jest.fn(() => {
-                return {
-                    width: 100,
-                    height: 100,
-                    top: 50,
-                    left: 50,
-                    bottom: -50,
-                    right: -50
-                };
-            });
-
-            Horizon({
-                onEntry,
-                onExit: jest.fn(),
-                triggerOnce: true,
-                toObserve: document.querySelector('.fake-element'),
-                intersectionObserverConfig: {
-                    root: null,
-                    rootMargin: '35%',
-                    threshold: 0
-                }
-            });
-
-            expect(onEntry.mock.calls.length).toEqual(0);
-        });
-
-        describe('Document root element', () => {
-            test('callback not called if its not intersecting', () => {
-                const onEntry = jest.fn();
-
-                Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return {
-                        width: 100,
-                        height: 100,
-                        top: 50,
-                        left: 50,
-                        bottom: -50,
-                        right: -50
-                    };
-                });
-
-                Horizon({
-                    onEntry,
-                    onExit: jest.fn(),
-                    triggerOnce: true,
-                    toObserve: document.querySelector('.fake-element'),
-                    intersectionObserverConfig: {
-                        root: null,
-                        rootMargin: '35%',
-                        threshold: 0
-                    }
-                });
-
-                expect(onEntry.mock.calls.length).toEqual(0);
-            });
-
-            test('callback is called if its intersecting', () => {
-                Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return elementInViewProperties;
-                });
-
-                document.documentElement.clientWidth = 100;
-                document.documentElement.clientHeight = 100;
-
-                const onEntry = jest.fn();
-
-                Horizon({
-                    onEntry,
-                    onExit: jest.fn(),
-                    triggerOnce: true,
-                    toObserve: document.querySelector('.fake-element'),
-                    intersectionObserverConfig: {
-                        root: null,
-                        rootMargin: '35%',
-                        threshold: 0
-                    }
-                });
-
-                expect(onEntry.mock.calls.length).toEqual(1);
-            });
-
-            test('event handlers are not removed if triggerOnce is false', () => {
-                Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return elementInViewProperties;
-                });
-
-                document.documentElement.clientWidth = 100;
-                document.documentElement.clientHeight = 100;
-
-                Horizon({
-                    onEntry: jest.fn(),
-                    onExit: jest.fn(),
-                    triggerOnce: false,
-                    toObserve: document.querySelector('.fake-element'),
-                    intersectionObserverConfig: {
-                        root: null,
-                        rootMargin: '35%',
-                        threshold: 0
-                    }
-                });
-
-                expect(window.removeEventListener.mock.calls.length).toEqual(0);
-            });
-
-            test('event handlers are removed if triggerOnce is true', () => {
-                Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return elementInViewProperties;
-                });
-
-                document.documentElement.clientWidth = 100;
-                document.documentElement.clientHeight = 100;
-
-                Horizon({
-                    onEntry: jest.fn(),
-                    onExit: jest.fn(),
-                    triggerOnce: true,
-                    toObserve: document.querySelector('.fake-element'),
-                    intersectionObserverConfig: {
-                        root: null,
-                        rootMargin: '35%',
-                        threshold: 0
-                    }
-                });
-
-                eventListners.scroll();
-
-                expect(window.removeEventListener.mock.calls.length).toEqual(2);
-                expect(window.removeEventListener.mock.calls[0][0]).toEqual(
-                    'scroll'
-                );
-                expect(window.removeEventListener.mock.calls[1][0]).toEqual(
-                    'resize'
-                );
-            });
-        });
-
-        describe('Defined root element', () => {
-            test('callback not called if its not intersecting', () => {
-                const onEntry = jest.fn();
-
-                Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return {
-                        width: 100,
-                        height: 100,
-                        top: 50,
-                        left: 50,
-                        bottom: -50,
-                        right: -50
-                    };
-                });
-
-                Horizon({
-                    onEntry,
-                    onExit: jest.fn(),
-                    triggerOnce: true,
-                    toObserve: document.querySelector('.fake-element'),
-                    intersectionObserverConfig: {
-                        root: document.querySelector('.fake-body'),
-                        rootMargin: '35%',
-                        threshold: 0
-                    }
-                });
-
-                expect(onEntry.mock.calls.length).toEqual(0);
-            });
-
-            test('callback is called if its intersecting', () => {
-                Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return elementInViewProperties;
-                });
-
-                Element.prototype.clientWidth = 100;
-                Element.prototype.clientHeight = 100;
-
-                document.documentElement.clientWidth = 100;
-                document.documentElement.clientHeight = 100;
-
-                const onEntry = jest.fn();
-
-                Horizon({
-                    onEntry,
-                    onExit: jest.fn(),
-                    triggerOnce: true,
-                    toObserve: document.querySelector('.fake-element'),
-                    intersectionObserverConfig: {
-                        root: document.querySelector('.fake-body'),
-                        rootMargin: '35%',
-                        threshold: 0
-                    }
-                });
-
-                expect(onEntry.mock.calls.length).toEqual(1);
-            });
-
-            test('event handlers are not removed if triggerOnce is false', () => {
-                Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return elementInViewProperties;
-                });
-
-                document.documentElement.clientWidth = 100;
-                document.documentElement.clientHeight = 100;
-
-                Horizon({
-                    onEntry: jest.fn(),
-                    onExit: jest.fn(),
-                    triggerOnce: false,
-                    toObserve: document.querySelector('.fake-element'),
-                    intersectionObserverConfig: {
-                        root: document.querySelector('.fake-body'),
-                        rootMargin: '35%',
-                        threshold: 0
-                    }
-                });
-
-                expect(window.removeEventListener.mock.calls.length).toEqual(0);
-            });
-
-            test('event handlers are removed if triggerOnce is true', () => {
-                Element.prototype.getBoundingClientRect = jest.fn(() => {
-                    return elementInViewProperties;
-                });
-
-                document.documentElement.clientWidth = 100;
-                document.documentElement.clientHeight = 100;
-
-                Horizon({
-                    onEntry: jest.fn(),
-                    onExit: jest.fn(),
-                    triggerOnce: true,
-                    toObserve: document.querySelector('.fake-element'),
-                    intersectionObserverConfig: {
-                        root: document.querySelector('.fake-body'),
-                        rootMargin: '35%',
-                        threshold: 0
-                    }
-                });
-
-                eventListners.scroll();
-
-                expect(window.removeEventListener.mock.calls.length).toEqual(2);
-                expect(window.removeEventListener.mock.calls[0][0]).toEqual(
-                    'scroll'
-                );
-                expect(window.removeEventListener.mock.calls[1][0]).toEqual(
-                    'resize'
-                );
-            });
-        });
+        expect(observe.mock.calls[0][0]).toEqual('toObserveValue');
     });
 });

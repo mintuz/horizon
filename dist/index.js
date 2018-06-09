@@ -6,15 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-var _requestAnimationFrame = require('./helpers/request-animation-frame');
-
-var _requestAnimationFrame2 = _interopRequireDefault(_requestAnimationFrame);
-
-var _lodash = require('lodash.throttle');
-
-var _lodash2 = _interopRequireDefault(_lodash);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var intersectionObserverPolyfill = false;
 
 var getIntersectionObserverConfig = function getIntersectionObserverConfig() {
     var customConfig = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -26,96 +18,56 @@ var getIntersectionObserverConfig = function getIntersectionObserverConfig() {
     }, customConfig);
 };
 
-var intersectionObserverExists = function intersectionObserverExists() {
-    return 'IntersectionObserver' in window && 'IntersectionObserverEntry' in window && 'intersectionRatio' in window.IntersectionObserverEntry.prototype;
-};
-
-var elementFromPoint = function elementFromPoint(x, y) {
-    return document.elementFromPoint(x, y);
-};
-
-var getRootElement = function getRootElement(rootElement) {
-    if (rootElement) {
-        return rootElement;
-    }
-
-    return document.documentElement;
-};
-
-var isElementVisible = function isElementVisible(rootElement, elementToObserve) {
-    var rect = elementToObserve.getBoundingClientRect();
-
-    var viewportWidth = getRootElement(rootElement).clientWidth;
-    var viewportHeight = getRootElement(rootElement).clientHeight;
-
-    // Return false if it's not in the viewport
-    if (rect.right < 0 || rect.bottom < 0 || rect.left > viewportWidth || rect.top > viewportHeight) {
-        return false;
-    }
-
-    // Return true if any of its four corners are visible
-    return elementToObserve.contains(elementFromPoint(rect.left, rect.top)) || elementToObserve.contains(elementFromPoint(rect.right, rect.top)) || elementToObserve.contains(elementFromPoint(rect.right, rect.bottom)) || elementToObserve.contains(elementFromPoint(rect.left, rect.bottom));
-};
-
-var legacyIntersectAPI = function legacyIntersectAPI(config) {
-    var intersectionConfig = getIntersectionObserverConfig(config.intersectionObserverConfig);
-    var elementToObserve = config.toObserve;
-    var rootElement = intersectionConfig.root;
-
-    var eventHandler = (0, _lodash2.default)(function (onLoad) {
-        (0, _requestAnimationFrame2.default)(function () {
-            if (isElementVisible(rootElement, elementToObserve)) {
-                config.onEntry();
-                if (!onLoad && config.triggerOnce) {
-                    window.removeEventListener('scroll', eventHandler);
-                    window.removeEventListener('resize', eventHandler);
-                }
-            } else {
-                config.onExit();
-                if (!onLoad && config.triggerOnce) {
-                    window.removeEventListener('scroll', eventHandler);
-                    window.removeEventListener('resize', eventHandler);
-                }
-            }
-        });
-    }, 16, {
-        leading: true
-    });
-
-    eventHandler(true);
-
-    window.addEventListener('scroll', function () {
-        eventHandler(false);
-    });
-    window.addEventListener('resize', function () {
-        eventHandler(false);
-    });
+var onClient = function onClient() {
+    return typeof window !== 'undefined';
 };
 
 exports.default = function (config) {
+    /* istanbul ignore if */
+    if (!onClient()) {
+        return false;
+    }
+
+    if (!intersectionObserverPolyfill) {
+        intersectionObserverPolyfill = require('intersection-observer');
+    }
+
     var intersectionObserverConfig = _extends({}, getIntersectionObserverConfig(config.intersectionObserverConfig));
 
-    if (intersectionObserverExists()) {
-        var observer = new IntersectionObserver(function (elements, observerInstance) {
-            elements.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    config.onEntry(entry);
+    var hiddenState = false;
+    var visibleState = false;
+
+    var observer = new IntersectionObserver(function (elements, observerInstance) {
+        elements.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                if (!visibleState) {
+                    hiddenState = false;
+                    visibleState = true;
+
+                    if (config.onEntry) {
+                        config.onEntry();
+                    }
 
                     if (config.triggerOnce) {
                         observerInstance.unobserve(config.toObserve);
                     }
-                } else {
-                    config.onExit(entry);
                 }
-            });
-        }, intersectionObserverConfig);
+            } else {
+                if (!hiddenState) {
+                    hiddenState = true;
+                    visibleState = false;
 
-        observer.observe(config.toObserve);
+                    if (config.onExit) {
+                        config.onExit();
+                    }
+                }
+            }
+        });
+    }, intersectionObserverConfig);
 
-        return;
-    }
+    observer.observe(config.toObserve);
 
-    legacyIntersectAPI(config);
+    return true;
 };
 
 module.exports = exports['default'];

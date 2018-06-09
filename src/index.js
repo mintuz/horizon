@@ -1,5 +1,4 @@
-import requestAnimationFrame from './helpers/request-animation-frame';
-import debounce from 'lodash.debounce';
+let intersectionObserverPolyfill = false;
 
 const getIntersectionObserverConfig = (customConfig = {}) => {
     return {
@@ -10,96 +9,58 @@ const getIntersectionObserverConfig = (customConfig = {}) => {
     };
 };
 
-const intersectionObserverExists = () => {
-    return (
-        'IntersectionObserver' in window &&
-        'IntersectionObserverEntry' in window &&
-        'intersectionRatio' in window.IntersectionObserverEntry.prototype
-    );
-};
-
-const getRootElement = (rootElement) => {
-    if (rootElement) {
-        return rootElement;
-    }
-
-    return document.documentElement;
-};
-
-const isElementVisible = (rootElement, elementToObserve) => {
-    const rect = elementToObserve.getBoundingClientRect();
-
-    return (
-        rect.bottom > 0 &&
-        rect.right > 0 &&
-        rect.left < getRootElement(rootElement).clientWidth &&
-        rect.top < getRootElement(rootElement).clientHeight
-    );
-};
-
-const legacyIntersectAPI = (config) => {
-    const intersectionConfig = getIntersectionObserverConfig(
-        config.intersectionObserverConfig
-    );
-    const elementToObserve = config.toObserve;
-    const rootElement = intersectionConfig.root;
-
-    const eventHandler = debounce((triggerOnce) => {
-        requestAnimationFrame(() => {
-            if (isElementVisible(rootElement, elementToObserve)) {
-                config.onEntry();
-                if (triggerOnce) {
-                    window.removeEventListener('scroll', eventHandler);
-                    window.removeEventListener('resize', eventHandler);
-                }
-            } else {
-                config.onExit();
-                if (triggerOnce) {
-                    window.removeEventListener('scroll', eventHandler);
-                    window.removeEventListener('resize', eventHandler);
-                }
-            }
-        });
-    }, 16);
-
-    eventHandler(false);
-
-    window.addEventListener('scroll', () => {
-        eventHandler(config.triggerOnce);
-    });
-
-    window.addEventListener('resize', () => {
-        eventHandler(config.triggerOnce);
-    });
+const onClient = () => {
+    return typeof window !== 'undefined';
 };
 
 export default (config) => {
+    /* istanbul ignore if */
+    if (!onClient()) {
+        return false;
+    }
+
+    if (!intersectionObserverPolyfill) {
+        // So we don't polyfill everytime Horizon is called.
+        // No defence on server around window not defined so has to be required at runtime.
+        intersectionObserverPolyfill = require('intersection-observer');
+    }
+
     const intersectionObserverConfig = {
         ...getIntersectionObserverConfig(config.intersectionObserverConfig)
     };
 
-    if (intersectionObserverExists()) {
-        const observer = new IntersectionObserver(
-            (elements, observerInstance) => {
-                elements.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        config.onEntry(entry);
+    let hiddenState = false;
+    let visibleState = false;
 
-                        if (config.triggerOnce) {
-                            observerInstance.unobserve(config.toObserve);
-                        }
-                    } else {
-                        config.onExit(entry);
+    const observer = new IntersectionObserver((elements, observerInstance) => {
+        elements.forEach((entry) => {
+            if (entry.isIntersecting) {
+                if (!visibleState) {
+                    hiddenState = false;
+                    visibleState = true;
+
+                    if (config.onEntry) {
+                        config.onEntry();
                     }
-                });
-            },
-            intersectionObserverConfig
-        );
 
-        observer.observe(config.toObserve);
+                    if (config.triggerOnce) {
+                        observerInstance.unobserve(config.toObserve);
+                    }
+                }
+            } else {
+                if (!hiddenState) {
+                    hiddenState = true;
+                    visibleState = false;
 
-        return;
-    }
+                    if (config.onExit) {
+                        config.onExit();
+                    }
+                }
+            }
+        });
+    }, intersectionObserverConfig);
 
-    legacyIntersectAPI(config);
+    observer.observe(config.toObserve);
+
+    return true;
 };

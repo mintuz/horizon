@@ -1,6 +1,6 @@
 # Horizon
 
-A light wrapper round the Intersection Observer API with a fallback for browsers that don't support Intersection Observer. Please note this is not a polyfill for Intersection Observer.
+A light wrapper round the Intersection Observer API. Please note this is not a polyfill for Intersection Observer.
 
 ## Install
 
