@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-require('intersection-observer');
+var intersectionObserverPolyfill = false;
 
 var getIntersectionObserverConfig = function getIntersectionObserverConfig() {
     var customConfig = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -18,39 +18,49 @@ var getIntersectionObserverConfig = function getIntersectionObserverConfig() {
     }, customConfig);
 };
 
+var onClient = function onClient() {
+    return typeof window !== 'undefined';
+};
+
 exports.default = function (config) {
-    var intersectionObserverConfig = _extends({}, getIntersectionObserverConfig(config.intersectionObserverConfig));
+    if (onClient() && !intersectionObserverPolyfill) {
+        intersectionObserverPolyfill = require('intersection-observer');
+    }
 
-    var hiddenState = false;
-    var visibleState = false;
+    if (onClient()) {
+        var intersectionObserverConfig = _extends({}, getIntersectionObserverConfig(config.intersectionObserverConfig));
 
-    var observer = new IntersectionObserver(function (elements, observerInstance) {
-        elements.forEach(function (entry) {
-            if (entry.isIntersecting && !visibleState) {
-                hiddenState = false;
-                visibleState = true;
+        var hiddenState = false;
+        var visibleState = false;
 
-                if (config.onEntry) {
-                    config.onEntry();
-                }
+        var observer = new IntersectionObserver(function (elements, observerInstance) {
+            elements.forEach(function (entry) {
+                if (entry.isIntersecting && !visibleState) {
+                    hiddenState = false;
+                    visibleState = true;
 
-                if (config.triggerOnce) {
-                    observerInstance.unobserve(config.toObserve);
-                }
-            } else {
-                if (!hiddenState) {
-                    hiddenState = true;
-                    visibleState = false;
+                    if (config.onEntry) {
+                        config.onEntry();
+                    }
 
-                    if (config.onExit) {
-                        config.onExit();
+                    if (config.triggerOnce) {
+                        observerInstance.unobserve(config.toObserve);
+                    }
+                } else {
+                    if (!hiddenState) {
+                        hiddenState = true;
+                        visibleState = false;
+
+                        if (config.onExit) {
+                            config.onExit();
+                        }
                     }
                 }
-            }
-        });
-    }, intersectionObserverConfig);
+            });
+        }, intersectionObserverConfig);
 
-    observer.observe(config.toObserve);
+        observer.observe(config.toObserve);
+    }
 };
 
 module.exports = exports['default'];

@@ -19,17 +19,6 @@
     "jest": "jest --watch"
   },
   "jest": {
-    "collectCoverageFrom": [
-      "src/**/*.js{,x}"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 100
-      }
-    },
     "testPathIgnorePatterns": [
       ".node_modules_production"
     ]

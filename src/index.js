@@ -1,4 +1,4 @@
-require('intersection-observer');
+let intersectionObserverPolyfill = false;
 
 const getIntersectionObserverConfig = (customConfig = {}) => {
     return {
@@ -9,7 +9,20 @@ const getIntersectionObserverConfig = (customConfig = {}) => {
     };
 };
 
+const onClient = () => {
+    return typeof window !== 'undefined';
+};
+
 export default (config) => {
+    /* istanbul ignore if */
+    if (!onClient()) {
+        return false;
+    }
+
+    if (!intersectionObserverPolyfill) {
+        intersectionObserverPolyfill = require('intersection-observer');
+    }
+
     const intersectionObserverConfig = {
         ...getIntersectionObserverConfig(config.intersectionObserverConfig)
     };
@@ -19,12 +32,14 @@ export default (config) => {
 
     const observer = new IntersectionObserver((elements, observerInstance) => {
         elements.forEach((entry) => {
-            if (entry.isIntersecting && !visibleState) {
-                hiddenState = false;
-                visibleState = true;
+            if (entry.isIntersecting) {
+                if (!visibleState) {
+                    hiddenState = false;
+                    visibleState = true;
 
-                if (config.onEntry) {
-                    config.onEntry();
+                    if (config.onEntry) {
+                        config.onEntry();
+                    }
                 }
 
                 if (config.triggerOnce) {
@@ -44,4 +59,6 @@ export default (config) => {
     }, intersectionObserverConfig);
 
     observer.observe(config.toObserve);
+
+    return true;
 };
