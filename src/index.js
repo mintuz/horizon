@@ -40,10 +40,10 @@ export default (config) => {
                     if (config.onEntry) {
                         config.onEntry();
                     }
-                }
 
-                if (config.triggerOnce) {
-                    observerInstance.unobserve(config.toObserve);
+                    if (config.triggerOnce) {
+                        observerInstance.unobserve(config.toObserve);
+                    }
                 }
             } else {
                 if (!hiddenState) {
