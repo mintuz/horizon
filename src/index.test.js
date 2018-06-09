@@ -143,19 +143,14 @@ describe('Horizon', () => {
         expect(unobserve.mock.calls.length).toEqual(0);
     });
 
-    test('onEntry callback is called and when triggerOnce is false unobserve is not called', () => {
+    test('when intersecting and triggerOnce is false unobserve is not called', () => {
         elements = [
             {
                 isIntersecting: true
             }
         ];
 
-        const onExit = jest.fn();
-        const onEntry = jest.fn();
-
         Horizon({
-            onEntry,
-            onExit,
             triggerOnce: false,
             toObserve: null,
             intersectionObserverConfig: {
@@ -166,9 +161,6 @@ describe('Horizon', () => {
         });
 
         callbacks[0]();
-
-        expect(onEntry.mock.calls.length).toEqual(1);
-        expect(onExit.mock.calls.length).toEqual(0);
 
         expect(unobserve.mock.calls.length).toEqual(0);
     });
