@@ -1,5 +1,7 @@
-import requestAnimationFrame from "./helpers/request-animation-frame";
+import requestAnimationFrame from "./request-animation-frame";
 import debounce from "lodash.debounce";
+
+require("intersection-observer");
 
 const getIntersectionObserverConfig = (customConfig = {}) => {
   return {
@@ -26,7 +28,11 @@ const getRootElement = rootElement => {
   return document.documentElement;
 };
 
-const isElementVisible = (rootElement, elementToObserve) => {
+const isElementVisible = (
+  rootElement,
+  elementToObserve,
+  intersectionConfig
+) => {
   const rootElementRect = rootElement.getBoundingClientRect();
   const elementRect = elementToObserve.getBoundingClientRect();
 
@@ -40,18 +46,18 @@ const isElementVisible = (rootElement, elementToObserve) => {
   };
 
   const offset = 0;
-  const threshold = 0;
+  const threshold = intersectionConfig.threshold;
 
   const elementThreshold = {
-    x: threshold * width,
-    y: threshold * height
+    x: threshold * width + offset,
+    y: threshold * height + offset
   };
 
   return (
-    intersection.top >= (offset.top || offset + elementThreshold.y) &&
-    intersection.right >= (offset.right || offset + elementThreshold.x) &&
-    intersection.bottom >= (offset.bottom || offset + elementThreshold.y) &&
-    intersection.left >= (offset.left || offset + elementThreshold.x)
+    intersection.top >= elementThreshold.y &&
+    intersection.right >= elementThreshold.x &&
+    intersection.bottom >= elementThreshold.y &&
+    intersection.left >= elementThreshold.x
   );
 };
 
@@ -67,12 +73,16 @@ const legacyIntersectAPI = config => {
 
   const debouncedIsVisibleHandler = debounce(() => {
     requestAnimationFrame(() => {
-      if (isElementVisible(rootElement, elementToObserve) && !visibleState) {
-        hiddenState = false;
-        visibleState = true;
+      if (isElementVisible(rootElement, elementToObserve, intersectionConfig)) {
+        if (!visibleState) {
+          console.log("Visible");
 
-        if (config.onEntry) {
-          config.onEntry();
+          hiddenState = false;
+          visibleState = true;
+
+          if (config.onEntry) {
+            config.onEntry();
+          }
         }
 
         if (config.triggerOnce) {
@@ -80,8 +90,15 @@ const legacyIntersectAPI = config => {
           rootElement.removeEventListener("resize", eventHandler);
         }
       } else {
-        if (!hiddenState && config.onExit) {
-          config.onExit();
+        if (!hiddenState) {
+          console.log("Hidden");
+
+          hiddenState = true;
+          visibleState = false;
+
+          if (config.onExit) {
+            config.onExit();
+          }
         }
       }
     });
@@ -107,6 +124,8 @@ export default config => {
   let visibleState = false;
 
   if (intersectionObserverExists()) {
+    console.log("intersect");
+
     const observer = new IntersectionObserver((elements, observerInstance) => {
       elements.forEach(entry => {
         if (entry.isIntersecting && !visibleState) {
