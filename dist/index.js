@@ -23,19 +23,24 @@ var onClient = function onClient() {
 };
 
 exports.default = function (config) {
-    if (onClient() && !intersectionObserverPolyfill) {
+    /* istanbul ignore if */
+    if (!onClient()) {
+        return false;
+    }
+
+    if (!intersectionObserverPolyfill) {
         intersectionObserverPolyfill = require('intersection-observer');
     }
 
-    if (onClient()) {
-        var intersectionObserverConfig = _extends({}, getIntersectionObserverConfig(config.intersectionObserverConfig));
+    var intersectionObserverConfig = _extends({}, getIntersectionObserverConfig(config.intersectionObserverConfig));
 
-        var hiddenState = false;
-        var visibleState = false;
+    var hiddenState = false;
+    var visibleState = false;
 
-        var observer = new IntersectionObserver(function (elements, observerInstance) {
-            elements.forEach(function (entry) {
-                if (entry.isIntersecting && !visibleState) {
+    var observer = new IntersectionObserver(function (elements, observerInstance) {
+        elements.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                if (!visibleState) {
                     hiddenState = false;
                     visibleState = true;
 
@@ -46,21 +51,23 @@ exports.default = function (config) {
                     if (config.triggerOnce) {
                         observerInstance.unobserve(config.toObserve);
                     }
-                } else {
-                    if (!hiddenState) {
-                        hiddenState = true;
-                        visibleState = false;
+                }
+            } else {
+                if (!hiddenState) {
+                    hiddenState = true;
+                    visibleState = false;
 
-                        if (config.onExit) {
-                            config.onExit();
-                        }
+                    if (config.onExit) {
+                        config.onExit();
                     }
                 }
-            });
-        }, intersectionObserverConfig);
+            }
+        });
+    }, intersectionObserverConfig);
 
-        observer.observe(config.toObserve);
-    }
+    observer.observe(config.toObserve);
+
+    return true;
 };
 
 module.exports = exports['default'];
