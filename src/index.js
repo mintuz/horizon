@@ -20,6 +20,8 @@ export default (config) => {
     }
 
     if (!intersectionObserverPolyfill) {
+        // So we don't polyfill everytime Horizon is called.
+        // No defence on server around window not defined so has to be required at runtime.
         intersectionObserverPolyfill = require('intersection-observer');
     }
 
