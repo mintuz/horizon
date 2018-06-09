@@ -89,10 +89,11 @@ describe('Horizon', () => {
         ];
 
         const onEntry = jest.fn();
+        const onExit = jest.fn();
 
         Horizon({
             onEntry,
-            onExit: jest.fn(),
+            onExit,
             triggerOnce: false,
             toObserve: null,
             intersectionObserverConfig: {
@@ -106,6 +107,8 @@ describe('Horizon', () => {
         callbacks[0]();
 
         expect(onEntry.mock.calls.length).toEqual(1);
+        expect(onExit.mock.calls.length).toEqual(0);
+
         expect(unobserve.mock.calls.length).toEqual(0);
     });
 
@@ -116,11 +119,12 @@ describe('Horizon', () => {
             }
         ];
 
+        const onEntry = jest.fn();
         const onExit = jest.fn();
 
         Horizon({
-            onEntry: jest.fn(),
-            onExit: onExit,
+            onEntry,
+            onExit,
             triggerOnce: false,
             toObserve: null,
             intersectionObserverConfig: {
@@ -133,7 +137,9 @@ describe('Horizon', () => {
         callbacks[0]();
         callbacks[0]();
 
+        expect(onEntry.mock.calls.length).toEqual(0);
         expect(onExit.mock.calls.length).toEqual(1);
+
         expect(unobserve.mock.calls.length).toEqual(0);
     });
 
@@ -144,11 +150,12 @@ describe('Horizon', () => {
             }
         ];
 
+        const onExit = jest.fn();
         const onEntry = jest.fn();
 
         Horizon({
             onEntry,
-            onExit: jest.fn(),
+            onExit,
             triggerOnce: false,
             toObserve: null,
             intersectionObserverConfig: {
@@ -161,7 +168,31 @@ describe('Horizon', () => {
         callbacks[0]();
 
         expect(onEntry.mock.calls.length).toEqual(1);
+        expect(onExit.mock.calls.length).toEqual(0);
+
         expect(unobserve.mock.calls.length).toEqual(0);
+    });
+
+    test('when triggerOnce is true unobserve is called', () => {
+        elements = [
+            {
+                isIntersecting: true
+            }
+        ];
+
+        Horizon({
+            triggerOnce: true,
+            toObserve: null,
+            intersectionObserverConfig: {
+                root: null,
+                rootMargin: '35%',
+                threshold: 0
+            }
+        });
+
+        callbacks[0]();
+
+        expect(unobserve.mock.calls.length).toEqual(1);
     });
 
     test('onEntry callback is called and when triggerOnce is true unobserve is called', () => {
@@ -172,10 +203,11 @@ describe('Horizon', () => {
         ];
 
         const onEntry = jest.fn();
+        const onExit = jest.fn();
 
         Horizon({
             onEntry,
-            onExit: jest.fn(),
+            onExit,
             triggerOnce: true,
             toObserve: null,
             intersectionObserverConfig: {
@@ -188,6 +220,7 @@ describe('Horizon', () => {
         callbacks[0]();
 
         expect(onEntry.mock.calls.length).toEqual(1);
+        expect(onExit.mock.calls.length).toEqual(0);
         expect(unobserve.mock.calls.length).toEqual(1);
     });
 
@@ -202,7 +235,6 @@ describe('Horizon', () => {
 
         Horizon({
             onEntry,
-            onExit: jest.fn(),
             triggerOnce: true,
             toObserve: null,
             intersectionObserverConfig: {
