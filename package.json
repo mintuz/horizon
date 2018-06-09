@@ -1,6 +1,6 @@
 {
   "name": "@mintuz/horizon",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "An Intersection Observer wrapper with some smart defaults",
   "main": "index.js",
   "homepage": "http://github.com/mintuz/horizon/tree/master",
@@ -48,7 +48,7 @@
   "author": "Adam Bulmer",
   "license": "MIT",
   "dependencies": {
-    "lodash.debounce": "^4.0.0"
+    "intersection-observer": "^0.5.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
