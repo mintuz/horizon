@@ -1,6 +1,6 @@
 {
   "name": "@mintuz/horizon",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "An Intersection Observer wrapper with some smart defaults",
   "main": "index.js",
   "homepage": "http://github.com/mintuz/horizon/tree/master",

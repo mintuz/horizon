@@ -1,0 +1,33 @@
+name: NPM Publish
+on:
+  push:
+    branches:
+      - master
+jobs:
+  npm-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Install
+        uses: Borales/actions-yarn@master
+        with:
+          args: install
+      - name: Build
+        uses: Borales/actions-yarn@master
+        with:
+          args: build
+      - name: Test
+        uses: Borales/actions-yarn@master
+        with:
+          args: test
+      - name: Publish
+        uses: Borales/actions-yarn@master
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+        with:
+          args: publish --access public
+      - uses: butlerlogic/action-autotag@stable
+        with:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          tag_prefx: "v"

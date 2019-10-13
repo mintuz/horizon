@@ -26,7 +26,8 @@ describe('Horizon', () => {
             });
 
             return {
-                observe
+                observe,
+                unobserve
             };
         });
 
@@ -234,5 +235,31 @@ describe('Horizon', () => {
         });
 
         expect(observe.mock.calls[0][0]).toEqual('toObserveValue');
+    });
+
+    test('unobserve is called with the toOpserve option.', () => {
+        elements = [
+            {
+                isIntersecting: false
+            }
+        ];
+
+        const onEntry = jest.fn();
+
+        const instance = Horizon({
+            onEntry,
+            onExit: jest.fn(),
+            triggerOnce: true,
+            toObserve: 'toObserveValue',
+            intersectionObserverConfig: {
+                root: null,
+                rootMargin: '35%',
+                threshold: 0
+            }
+        });
+
+        instance.unobserve();
+
+        expect(unobserve.mock.calls[0][0]).toEqual('toObserveValue');
     });
 });
