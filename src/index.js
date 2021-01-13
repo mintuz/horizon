@@ -40,7 +40,7 @@ export default config => {
           visibleState = true;
 
           if (config.onEntry) {
-            config.onEntry();
+            config.onEntry(entry);
           }
 
           if (config.triggerOnce) {
@@ -53,7 +53,7 @@ export default config => {
           visibleState = false;
 
           if (config.onExit) {
-            config.onExit();
+            config.onExit(entry);
           }
         }
       }
